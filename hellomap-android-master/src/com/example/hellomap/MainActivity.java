@@ -1,13 +1,17 @@
 package com.example.hellomap;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
@@ -100,11 +104,13 @@ LocationListener
 
 		// get last location 
 		provider = LocationManager.GPS_PROVIDER;
+		Log.i("debug", "about to get last known location");
 		mCurrentLocation = locationManager.getLastKnownLocation(provider);
-
+		Log.i("debug", "successfully fetched last location");
 		double currentLat = mCurrentLocation.getLatitude();
 		double currentLong = mCurrentLocation.getLongitude();
 		LatLng currentLatLng = new LatLng(currentLat, currentLong);
+		Log.i("debug", "got the lat and lang fine ");
 		CameraUpdate update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 14);
 		mMap.moveCamera(update);
 		Toast.makeText(this, "Welcome to Wake Me When", Toast.LENGTH_LONG).show();
@@ -223,8 +229,31 @@ LocationListener
 	}
 
 
-	private void alarmFunction() { 	
+	private void alarmFunction(boolean playSound) { 
+		if (playSound) {
+			MediaPlayer mp = MediaPlayer.create(getApplicationContext(), R.raw.alarmsound);
+			mp.start();
+			
+			//clean up stuff eventually
+			//mediaPlayer.release();
+			//mediaPlayer = null;
+			Toast.makeText(this, "sound should be playing", Toast.LENGTH_LONG).show();
+			
+			// restart application
+			resetApplication();
+			
+		}
 		Toast.makeText(this, "ALARM!!!", Toast.LENGTH_SHORT).show();
+	}
+	
+	private void resetApplication () {
+		Context currContext = getApplicationContext();
+		Intent mStartActivity = new Intent(currContext, MainActivity.class);
+		int mPendingIntentId = 123456;
+		PendingIntent mPendingIntent = PendingIntent.getActivity(currContext, mPendingIntentId,    mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+		AlarmManager mgr = (AlarmManager)currContext.getSystemService(Context.ALARM_SERVICE);
+		mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+		System.exit(0);
 	}
 
 
@@ -249,18 +278,28 @@ LocationListener
 
 	@Override
 	public void onLocationChanged(Location location) {
+		
+		// this is crashing because it is getting called when target location has not been reset?? 
 		// Report to the UI that the location was updated
+		if (location == null || targetLocation == null ) {
+			Toast.makeText(this, "oh null", Toast.LENGTH_SHORT).show();
+			return;
+		}
 		double distanceApart  = location.distanceTo(targetLocation);
-
+		boolean playSoundOnce = true;
 		String msg = "New Distance from " +
 				Double.toString(distanceApart) ;
 		Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
 
 		// ready to alarm!! 
 		if (distanceApart < alarmDist) {
-			alarmFunction();
+			alarmFunction(playSoundOnce);
+			//playSoundOnce = false;
+			
+			
 		}
 	}
+	
 
 	/**Methods overridden and not implemented*/
 	
