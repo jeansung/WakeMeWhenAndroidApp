@@ -18,5 +18,5 @@
 
 ## Bonus Features
 That I might add if I have time 
-* Let user choose a sound rom a list
+* Let user choose a sound from a list
 * A start menu
