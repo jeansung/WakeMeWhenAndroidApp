@@ -1,5 +1,8 @@
 package com.example.hellomap;
 
+import java.io.IOException;
+import java.util.List;
+
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -7,7 +10,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Address;
 import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -28,6 +33,7 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -67,6 +73,7 @@ LocationListener
 	private AlertDialog.Builder latInputAlert;
 	private AlertDialog.Builder longInputAlert;
 	private AlertDialog.Builder alarmDistInputAlert;
+	private AlertDialog.Builder resetApplicationAlert;
 
 	// Information about the Target Location 
 	Location targetLocation;
@@ -85,6 +92,7 @@ LocationListener
 		setUpMapIfNeeded();
 
 		dialogSetup();
+
 		// map location set up 
 		mMap.setMyLocationEnabled(true);  
 
@@ -102,21 +110,66 @@ LocationListener
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1, 1, this);
 
 
-		// get last location 
+		// get last location, trying until success 
 		provider = LocationManager.GPS_PROVIDER;
 		Log.i("debug", "about to get last known location");
 		mCurrentLocation = locationManager.getLastKnownLocation(provider);
-		Log.i("debug", "successfully fetched last location");
-		double currentLat = mCurrentLocation.getLatitude();
-		double currentLong = mCurrentLocation.getLongitude();
-		LatLng currentLatLng = new LatLng(currentLat, currentLong);
-		Log.i("debug", "got the lat and lang fine ");
-		CameraUpdate update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 14);
-		mMap.moveCamera(update);
+		boolean tryAgain = true;
+		while (tryAgain) {
+			try {
+				double currentLat = mCurrentLocation.getLatitude();
+				Log.i("debug", "got last lat");
+				double currentLong = mCurrentLocation.getLongitude();
+				Log.i("debug", "got last long");
+				LatLng currentLatLng = new LatLng(currentLat, currentLong);
+				Log.i("debug", "got the lat and lang fine ");
+				//CameraUpdate update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 14);
+				//mMap.moveCamera(update);
+				tryAgain = false;
+			}
+			
+			catch (NullPointerException e) {
+				continue;
+			}
+		}
+		
+
+		
 		Toast.makeText(this, "Welcome to Wake Me When", Toast.LENGTH_LONG).show();
 
-		askForTargetLatLng();
+		testAddrInput();
+		//askForTargetLatLng();
 
+	}
+	
+	private void testAddrInput() {
+        String addressStr = "Sainta Augustine,FL,4405 Avenue A";
+        Geocoder geoCoder = new Geocoder(MainActivity.this);
+
+        double latitude = 0;
+        double longitude = 0;
+		try {
+            List<Address> addresses =
+        geoCoder.getFromLocationName(addressStr, 1); 
+            if (addresses.size() >  0) {
+               latitude = addresses.get(0).getLatitude(); 
+            	longitude = addresses.get(0).getLongitude(); }
+
+        } catch (IOException e) { // TODO Auto-generated catch block
+        e.printStackTrace(); }
+
+
+      LatLng pos = new LatLng(latitude, longitude);
+      mMap.addMarker(new MarkerOptions().icon(
+              BitmapDescriptorFactory
+                      .defaultMarker(BitmapDescriptorFactory.HUE_RED))
+              .position(pos));
+//      mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
+//      mMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
+      Toast.makeText(this, "OHHHH A LOCATION??", Toast.LENGTH_SHORT).show();
+
+		CameraUpdate update2 = CameraUpdateFactory.newLatLngZoom(pos, 14);
+		mMap.moveCamera(update2);
 	}
 	
 	@Override
@@ -161,10 +214,12 @@ LocationListener
 		latInputAlert = new AlertDialog.Builder(this);
 		longInputAlert = new AlertDialog.Builder(this);
 		alarmDistInputAlert = new AlertDialog.Builder(this);
+		resetApplicationAlert = new AlertDialog.Builder(this);
 		
 		latInputAlert.setTitle("Destination Latitude:");
 		longInputAlert.setTitle("Destination Longitude:");
-		alarmDistInputAlert.setTitle("Alarm distance from Target Location (in meters)");
+		alarmDistInputAlert.setTitle("Alarm distance from destination (in meters)");
+		resetApplicationAlert.setTitle("Okay, reset the alarm!");
 
 		final EditText inputViewLat = new EditText(this);
 		latInputAlert.setView(inputViewLat);
@@ -174,8 +229,12 @@ LocationListener
 
 		final EditText inputViewAlarmDist = new EditText(this);
 		alarmDistInputAlert.setView(inputViewAlarmDist);
+		
+//		final EditText inputViewResetApplication = new EditText(this);
+//		resetApplicationAlert.setView(inputViewResetApplication);
 
 		// actual dialog settings settings 
+		// Only allowing Okay button, the cancel button doesn't really apply 
 		latInputAlert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int whichButton) {
 
@@ -226,6 +285,12 @@ LocationListener
 				alarmDist = Double.parseDouble(valueDist);
 			}
 		});     
+		
+		resetApplicationAlert.setPositiveButton("Reset", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				resetApplication();
+			}
+		});     
 	}
 
 
@@ -237,10 +302,8 @@ LocationListener
 			//clean up stuff eventually
 			//mediaPlayer.release();
 			//mediaPlayer = null;
-			Toast.makeText(this, "sound should be playing", Toast.LENGTH_LONG).show();
-			
-			// restart application
-			resetApplication();
+			resetApplicationAlert.show();
+
 			
 		}
 		Toast.makeText(this, "ALARM!!!", Toast.LENGTH_SHORT).show();

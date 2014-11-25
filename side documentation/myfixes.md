@@ -22,3 +22,41 @@ Following, a rough degree, instructions specified [here](https://github.com/goog
 ## Renaming Android Project & etc.
 * Refactoring Eclipse Project, instructions: Refactor, Rename
 * Refactoring Android Package Name => [here](http://stackoverflow.com/questions/3697899/package-renaming-in-eclipse-android-project/12429872#12429872)
+
+## Manifest file not found
+If the manifest file is not found then you can reset it by:
+```
+If you see an error about AndroidManifest.xml, or some problems  
+related to an Android zip file, right click on the project and select       
+Android Tools > Fix Project Properties. (The project is looking in 
+the wrong location for the library file, this will fix it for you.)  
+```
+From [here](http://stackoverflow.com/a/7451778)
+
+## Getting the address as a string
+solution from [here](http://stackoverflow.com/questions/16686436/getting-latitude-longitude-from-address-in-android)
+
+```
+//String addressStr = "faisalabad";/// this give me correct address
+        String addressStr = "Sainta Augustine,FL,4405 Avenue A";
+          Geocoder geoCoder = new Geocoder(MapClass.this, Locale.getDefault());
+
+          try {
+              List<Address> addresses =
+          geoCoder.getFromLocationName(addressStr, 1); 
+              if (addresses.size() >  0) {
+                 latitude = addresses.get(0).getLatitude(); longtitude =
+          addresses.get(0).getLongitude(); }
+
+          } catch (IOException e) { // TODO Auto-generated catch block
+          e.printStackTrace(); }
+
+
+        pos = new LatLng(latitude, longtitude);
+        googleMap.addMarker(new MarkerOptions().icon(
+                BitmapDescriptorFactory
+                        .defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                .position(pos));
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
+```
