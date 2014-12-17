@@ -109,7 +109,17 @@ LocationListener
 		// after set up
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1, 1, this);
 
+        // getting GPS status
+        boolean isGPSEnabled = locationManager
+                .isProviderEnabled(LocationManager.GPS_PROVIDER);
 
+        // getting network status
+        boolean isNetworkEnabled = locationManager
+                .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        if (!isGPSEnabled || !isNetworkEnabled) {
+        	System.exit(0);
+        }
+        
 		// get last location, trying until success 
 		provider = LocationManager.GPS_PROVIDER;
 		Log.i("debug", "about to get last known location");
@@ -133,44 +143,18 @@ LocationListener
 			}
 		}
 		
+		
+		
 
 		
 		Toast.makeText(this, "Welcome to Wake Me When", Toast.LENGTH_LONG).show();
 
-		testAddrInput();
-		//askForTargetLatLng();
+		//testAddrInput();
+		askForTargetLatLng();
 
 	}
 	
-	private void testAddrInput() {
-        String addressStr = "Sainta Augustine,FL,4405 Avenue A";
-        Geocoder geoCoder = new Geocoder(MainActivity.this);
 
-        double latitude = 0;
-        double longitude = 0;
-		try {
-            List<Address> addresses =
-        geoCoder.getFromLocationName(addressStr, 1); 
-            if (addresses.size() >  0) {
-               latitude = addresses.get(0).getLatitude(); 
-            	longitude = addresses.get(0).getLongitude(); }
-
-        } catch (IOException e) { // TODO Auto-generated catch block
-        e.printStackTrace(); }
-
-
-      LatLng pos = new LatLng(latitude, longitude);
-      mMap.addMarker(new MarkerOptions().icon(
-              BitmapDescriptorFactory
-                      .defaultMarker(BitmapDescriptorFactory.HUE_RED))
-              .position(pos));
-//      mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
-//      mMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
-      Toast.makeText(this, "OHHHH A LOCATION??", Toast.LENGTH_SHORT).show();
-
-		CameraUpdate update2 = CameraUpdateFactory.newLatLngZoom(pos, 14);
-		mMap.moveCamera(update2);
-	}
 	
 	@Override
 	protected void onResume() {
@@ -342,7 +326,6 @@ LocationListener
 	@Override
 	public void onLocationChanged(Location location) {
 		
-		// this is crashing because it is getting called when target location has not been reset?? 
 		// Report to the UI that the location was updated
 		if (location == null || targetLocation == null ) {
 			Toast.makeText(this, "oh null", Toast.LENGTH_SHORT).show();
